@@ -106,11 +106,11 @@ class _AppTextFieldState extends State<AppTextField> {
         prefixIcon: widget.prefix,
         disabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30.r),
-          borderSide: const BorderSide(color: AppColors.textfield),
+          borderSide: BorderSide(color: AppColors.textfield.withOpacity(0.5)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30.r),
-          borderSide: const BorderSide(color: AppColors.textfield),
+          borderSide: BorderSide(color: AppColors.textfield.withOpacity(0.5)),
         ),
         filled: true,
         hintStyle: AppTextStyle.style13400(
@@ -126,11 +126,11 @@ class _AppTextFieldState extends State<AppTextField> {
         contentPadding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 15.w),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30.r),
-          borderSide: const BorderSide(color: AppColors.textfield),
+          borderSide: BorderSide(color: AppColors.textfield.withOpacity(0.5)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30.r),
-          borderSide: const BorderSide(color: AppColors.textfield),
+          borderSide: BorderSide(color: AppColors.textfield.withOpacity(0.5)),
         ),
         errorStyle: AppTextStyle.style12400(myColor: AppColors.errorColor),
         errorBorder: OutlineInputBorder(

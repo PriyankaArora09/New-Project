@@ -6,4 +6,12 @@ abstract class AppNavigator {
   static void goToSplash(BuildContext context) {
     GoRouter.of(context).go(Routes.splash);
   }
+
+  static void goToCreateNote(BuildContext context) {
+    GoRouter.of(context).push(Routes.createNote);
+  }
+
+  static void goToNotesList(BuildContext context) {
+    GoRouter.of(context).go(Routes.notesList);
+  }
 }

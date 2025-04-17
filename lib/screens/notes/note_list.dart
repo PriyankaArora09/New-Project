@@ -1,4 +1,5 @@
 import 'package:demo/constants/app_images.dart';
+import 'package:demo/navigator/app_navigator.dart';
 import 'package:demo/theme/app_colors.dart';
 import 'package:demo/theme/app_paddings.dart';
 import 'package:demo/theme/app_textstyles.dart';
@@ -44,15 +45,20 @@ class _NotesScreenState extends State<NotesScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: Container(
-        margin: EdgeInsets.only(bottom: 20.h),
-        height: 40.h,
-        width: 40.w,
-        decoration: const BoxDecoration(
-            color: AppColors.primaryTeal, shape: BoxShape.circle),
-        child: const Icon(
-          Icons.add,
-          color: AppColors.primaryBlack,
+      floatingActionButton: InkWell(
+        onTap: () {
+          AppNavigator.goToCreateNote(context);
+        },
+        child: Container(
+          margin: EdgeInsets.only(bottom: 20.h),
+          height: 40.h,
+          width: 40.w,
+          decoration: const BoxDecoration(
+              color: AppColors.primaryTeal, shape: BoxShape.circle),
+          child: const Icon(
+            Icons.add,
+            color: AppColors.primaryBlack,
+          ),
         ),
       ),
       backgroundColor: AppColors.primaryBackground,
@@ -68,7 +74,7 @@ class _NotesScreenState extends State<NotesScreen>
             Expanded(
                 child: TabBarView(
                     controller: _tabController,
-                    children: [staggeedGrid(false), staggeedGrid(true)]))
+                    children: [staggeredGrid(false), staggeredGrid(true)]))
           ],
         ),
       ),
@@ -98,9 +104,9 @@ class _NotesScreenState extends State<NotesScreen>
               color: AppColors.primaryWhite,
             ),
           ),
-          8.width,
+          12.width,
           Image.asset(
-            AppImages.filters,
+            AppImages.sort,
             scale: 20.sp,
             color: AppColors.primaryWhite,
           ),
@@ -109,6 +115,13 @@ class _NotesScreenState extends State<NotesScreen>
       ),
     );
   }
+
+  // Widget optionsRow() {
+  //   return Row(
+  //     mainAxisAlignment: MainAxisAlignment.end,
+  //     children: [],
+  //   );
+  // }
 
   Widget tabsHeader() {
     return SizedBox(
@@ -127,14 +140,14 @@ class _NotesScreenState extends State<NotesScreen>
         tabs: const [
           Tab(text: "All"),
           Tab(
-            text: "Favorites",
+            text: "Bookmarks",
           )
         ],
       ),
     );
   }
 
-  Widget staggeedGrid(bool isFav) {
+  Widget staggeredGrid(bool isFav) {
     return SingleChildScrollView(
       child: StaggeredGrid.count(
         axisDirection: AxisDirection.down,
@@ -182,7 +195,7 @@ class _NotesScreenState extends State<NotesScreen>
               ? Padding(
                   padding: EdgeInsets.only(bottom: 10.h, right: 10.w),
                   child: Icon(
-                    Icons.favorite_border,
+                    Icons.bookmark_add_outlined,
                     size: 18.sp,
                     color: AppColors.textColor.withOpacity(0.5),
                   ),

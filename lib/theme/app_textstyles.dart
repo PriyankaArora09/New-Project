@@ -10,6 +10,22 @@ class AppTextStyle {
     );
   }
 
+  static TextStyle style26400({required Color myColor}) {
+    return TextStyle(
+      fontSize: 26.sp,
+      fontWeight: FontWeight.w400,
+      color: myColor,
+    );
+  }
+
+  static TextStyle style20400({required Color myColor}) {
+    return TextStyle(
+      fontSize: 20.sp,
+      fontWeight: FontWeight.w400,
+      color: myColor,
+    );
+  }
+
   static TextStyle style08400({required Color myColor}) {
     return TextStyle(
       fontSize: 8.sp,
