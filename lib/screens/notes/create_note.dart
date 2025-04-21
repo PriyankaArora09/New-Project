@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:demo/constants/app_images.dart';
+import 'package:demo/screens/notes/canvas.dart';
 import 'package:demo/screens/notes/color_picker.dart';
 import 'package:demo/theme/app_colors.dart';
 import 'package:demo/theme/app_paddings.dart';
@@ -26,6 +27,8 @@ class _CreateNoteState extends State<CreateNote> {
 
   ScrollController scrollController = ScrollController();
 
+  bool showCanvas = false;
+
   final stt.SpeechToText speech = stt.SpeechToText();
   bool isListening = false;
   String spokenText = '';
@@ -39,12 +42,18 @@ class _CreateNoteState extends State<CreateNote> {
   @override
   void dispose() {
     speech.cancel();
+
     // final delta = _controller.document.toDelta();
     // final jsonContent = delta.toJson();
 
     // Print the JSON content
     // print(jsonContent);
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
   }
 
   @override
@@ -58,7 +67,7 @@ class _CreateNoteState extends State<CreateNote> {
             final delta = _controller.document.toDelta();
             final jsonContent = delta.toJson();
 
-            Navigator.pop(context);
+            // Navigator.pop(context);
 
             // Print the JSON content
             print(jsonContent);
@@ -81,8 +90,19 @@ class _CreateNoteState extends State<CreateNote> {
             Icon(Icons.bookmark_add_outlined,
                 color: AppColors.primaryWhite, size: 20.sp),
             15.width,
-            Icon(Icons.archive_outlined,
-                color: AppColors.primaryWhite, size: 20.sp),
+            InkWell(
+              onTap: () {
+                // final delta = _controller.document.toDelta();
+                // final jsonContent = delta.toJson();
+
+                // // Navigator.pop(context);
+
+                // // Print the JSON content
+                // debugPrint(jsonEncode(_controller.document.toDelta().toJson()));
+              },
+              child: Icon(Icons.archive_outlined,
+                  color: AppColors.primaryWhite, size: 20.sp),
+            ),
           ],
         ),
         backgroundColor: backgroundColor,
@@ -96,10 +116,16 @@ class _CreateNoteState extends State<CreateNote> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              pickedFilesPreview(),
-              headingField(),
-              10.height,
-              bodyField(),
+              if (showCanvas)
+                SizedBox(
+                    height: MediaQuery.of(context).size.height,
+                    child: const CanvasWidget())
+              else ...[
+                pickedFilesPreview(),
+                headingField(),
+                10.height,
+                bodyField(),
+              ]
             ],
           ),
         ),
@@ -155,25 +181,6 @@ class _CreateNoteState extends State<CreateNote> {
     );
   }
 
-  // Widget bodyField() {
-
-  //   // ZefyrEditor(
-  //   //   scrollController: scrollController,
-  //   //   scrollable: false,
-  //   //   controller: _controller,
-  //   //   textCapitalization: TextCapitalization.none,
-  //   //     TextFormField(
-  //   //   controller: bodyController,
-  //   //   maxLines: null,
-  //   //   keyboardType: TextInputType.multiline,
-  //   //   cursorHeight: 16.sp,
-  //   //   cursorColor: AppColors.primaryWhite,
-  //   //   style: AppTextStyle.style16400(myColor: AppColors.primaryWhite),
-  //   //   decoration: getInputDecoration(
-  //   //       "Note", AppTextStyle.style16400(myColor: Colors.grey[600]!)),
-  //   // );
-  // }
-
   Widget bottomSheet() {
     return Container(
       constraints: BoxConstraints(maxHeight: 100.h),
@@ -227,8 +234,15 @@ class _CreateNoteState extends State<CreateNote> {
                   onTap: () async {},
                   child:
                       const Icon(Icons.share, color: AppColors.primaryWhite)),
-              const Icon(Icons.palette, color: AppColors.primaryWhite),
-              const Icon(Icons.group, color: AppColors.primaryWhite),
+              InkWell(
+                  onTap: () {
+                    setState(() {
+                      showCanvas = true;
+                    });
+                  },
+                  child:
+                      const Icon(Icons.palette, color: AppColors.primaryWhite)),
+              const Icon(Icons.lock, color: AppColors.primaryWhite),
               const Icon(Icons.highlight, color: AppColors.primaryWhite),
             ],
           ),
@@ -245,17 +259,24 @@ class _CreateNoteState extends State<CreateNote> {
       children: [
         InkWell(
             onTap: () {
+              setState(() {
+                showCanvas = false;
+              });
               filePickerMethod();
             },
             child:
                 const Icon(Icons.attach_file, color: AppColors.primaryWhite)),
         InkWell(
-          onTap: () => showModalBottomSheet(
-            constraints: BoxConstraints(maxHeight: 300.h),
-            context: context,
-            backgroundColor: Colors.transparent,
-            builder: (_) => textFormatterSheet(),
-          ),
+          onTap: () {
+            // setState(() {
+            //   showCanvas = false;
+            // });
+            showModalBottomSheet(
+                constraints: BoxConstraints(maxHeight: 300.h),
+                context: context,
+                backgroundColor: Colors.transparent,
+                builder: (_) => textFormatterSheet());
+          },
           child: const Icon(Icons.text_format_outlined,
               color: AppColors.primaryWhite),
         ),
@@ -270,12 +291,18 @@ class _CreateNoteState extends State<CreateNote> {
         // Image.asset(AppImages.bgImage, scale: 28.sp),
         InkWell(
             onTap: () {
+              setState(() {
+                showCanvas = false;
+              });
               captureImage();
             },
             child:
                 const Icon(Icons.photo_camera, color: AppColors.primaryWhite)),
         InkWell(
             onTap: () {
+              setState(() {
+                showCanvas = false;
+              });
               showSpeechDialog();
             },
             child: const Icon(Icons.mic, color: AppColors.primaryWhite)),
@@ -284,6 +311,9 @@ class _CreateNoteState extends State<CreateNote> {
   }
 
   Widget colorPickerBottomSheet() {
+    setState(() {
+      showCanvas = false;
+    });
     return Container(
       padding: AppPaddings.bottomSheetContainer,
       decoration: BoxDecoration(
@@ -320,6 +350,9 @@ class _CreateNoteState extends State<CreateNote> {
             children: [
               InkWell(
                 onTap: () {
+                  setState(() {
+                    showCanvas = false;
+                  });
                   backgroundColor = AppColors.primaryBackground;
                   setState(() {});
                 },
@@ -389,17 +422,7 @@ class _CreateNoteState extends State<CreateNote> {
             ),
           ),
           40.height,
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              const Icon(Icons.attach_file, color: AppColors.primaryWhite),
-              const Icon(Icons.text_format_outlined,
-                  color: AppColors.primaryWhite),
-              const Icon(Icons.circle, color: AppColors.primaryGraphics),
-              Image.asset(AppImages.bgImage, scale: 28.sp),
-              const Icon(Icons.mic, color: AppColors.primaryWhite),
-            ],
-          ),
+          bottomSheetBottomRow()
         ],
       ),
     );
@@ -575,10 +598,12 @@ class _CreateNoteState extends State<CreateNote> {
     );
 
     if (result != null && result.files.isNotEmpty) {
-      filePaths = result.files
+      List<String> newFilePaths = result.files
           .where((file) => file.path != null)
           .map((file) => file.path!)
           .toList();
+
+      filePaths.addAll(newFilePaths);
 
       setState(() {});
 
