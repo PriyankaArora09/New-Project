@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:demo/constants/app_images.dart';
+import 'package:demo/navigator/app_navigator.dart';
 import 'package:demo/screens/notes/canvas.dart';
 import 'package:demo/screens/notes/color_picker.dart';
 import 'package:demo/theme/app_colors.dart';
@@ -67,7 +68,7 @@ class _CreateNoteState extends State<CreateNote> {
             final delta = _controller.document.toDelta();
             final jsonContent = delta.toJson();
 
-            // Navigator.pop(context);
+            Navigator.pop(context);
 
             // Print the JSON content
             print(jsonContent);
@@ -157,6 +158,7 @@ class _CreateNoteState extends State<CreateNote> {
   }
 
   Widget bodyField() {
+    showCanvas = false;
     return quill.QuillEditor.basic(
       scrollController: scrollController,
       configurations: quill.QuillEditorConfigurations(
@@ -169,13 +171,13 @@ class _CreateNoteState extends State<CreateNote> {
           customStyles: quill.DefaultStyles(
             paragraph: quill.DefaultTextBlockStyle(
                 AppTextStyle.style16400(myColor: AppColors.primaryWhite),
-                const quill.VerticalSpacing(0.0, 0.0), // Vertical spacing
-                const quill.VerticalSpacing(0.0, 0.0), // Line spacing
+                const quill.VerticalSpacing(0.0, 0.0),
+                const quill.VerticalSpacing(0.0, 0.0),
                 null),
             placeHolder: quill.DefaultTextBlockStyle(
                 AppTextStyle.style16400(myColor: Colors.grey[600]!),
-                const quill.VerticalSpacing(3.0, 3.0), // Vertical spacing
-                const quill.VerticalSpacing(0.0, 0.0), // Line spacing
+                const quill.VerticalSpacing(3.0, 3.0),
+                const quill.VerticalSpacing(0.0, 0.0),
                 null),
           )),
     );
@@ -242,7 +244,11 @@ class _CreateNoteState extends State<CreateNote> {
                   },
                   child:
                       const Icon(Icons.palette, color: AppColors.primaryWhite)),
-              const Icon(Icons.lock, color: AppColors.primaryWhite),
+              InkWell(
+                  onTap: () {
+                    AppNavigator.goToCreateLock(context);
+                  },
+                  child: const Icon(Icons.lock, color: AppColors.primaryWhite)),
               const Icon(Icons.highlight, color: AppColors.primaryWhite),
             ],
           ),
@@ -311,9 +317,11 @@ class _CreateNoteState extends State<CreateNote> {
   }
 
   Widget colorPickerBottomSheet() {
-    setState(() {
-      showCanvas = false;
-    });
+    // if (mounted) {
+    //   setState(() {
+    showCanvas = false;
+    //   });
+    // }
     return Container(
       padding: AppPaddings.bottomSheetContainer,
       decoration: BoxDecoration(

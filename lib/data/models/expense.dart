@@ -1,87 +1,103 @@
-// import 'dart:ui';
+import 'dart:convert';
+import 'package:demo/data/models/category.dart';
+import 'package:demo/data/models/sub_expense.dart';
 
-// import 'package:demo/data/models/category.dart';
+class Expense {
+  final int id;
+  final String? title;
+  final double amount;
+  final String currency;
+  final String? description;
+  final bool hasAttachments;
+  final List<String> attachments;
+  final bool isPinned;
+  final bool isArchieved;
+  final bool isTrash;
+  final bool isRecurring;
+  final String? recurringFrequency;
+  final String? paymentMethod;
+  final String? notes;
+  final Category? category;
+  final DateTime expenseDate;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
+  final int? parentExpenseId;
+  final SubExpense? subExpense;
 
-// class Expense {
-//   final int id;
-//   final String? title;
-//   final String? deltaJsonBody;
-//   final String? pinLock;
-//   final bool hasAttachments;
-//   final bool hasCanvas;
-//   final Color backgroundColor;
-//   final bool isPinned;
-//   final bool isBookmarked;
-//   final bool isArchieved;
-//   final bool isTrash;
-//   final bool isLocked;
-//   final List<String> attachments;
-//   final String? canvasData;
-//   final DateTime createdAt;
-//   final DateTime updatedAt;
-//   final Category? category;
-//   final String? url;
+  Expense({
+    required this.id,
+    required this.title,
+    required this.amount,
+    required this.currency,
+    required this.description,
+    required this.hasAttachments,
+    required this.attachments,
+    required this.isPinned,
+    required this.isArchieved,
+    required this.isTrash,
+    required this.isRecurring,
+    required this.recurringFrequency,
+    required this.paymentMethod,
+    required this.notes,
+    required this.category,
+    required this.expenseDate,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.deletedAt,
+    required this.parentExpenseId,
+    this.subExpense,
+  });
 
-//   Expense(
-//       {required this.id,
-//       required this.title,
-//       required this.deltaJsonBody,
-//       required this.pinLock,
-//       required this.hasAttachments,
-//       required this.hasCanvas,
-//       required this.backgroundColor,
-//       required this.isPinned,
-//       required this.isBookmarked,
-//       required this.isArchieved,
-//       required this.isTrash,
-//       required this.attachments,
-//       required this.canvasData,
-//       required this.createdAt,
-//       required this.isLocked,
-//       required this.updatedAt,
-//       required this.category,
-//       required this.url});
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'title': title,
+        'amount': amount,
+        'currency': currency,
+        'description': description,
+        'hasAttachments': hasAttachments ? 1 : 0,
+        'attachments': jsonEncode(attachments),
+        'isPinned': isPinned ? 1 : 0,
+        'isArchieved': isArchieved ? 1 : 0,
+        'isTrash': isTrash ? 1 : 0,
+        'isRecurring': isRecurring ? 1 : 0,
+        'recurringFrequency': recurringFrequency,
+        'paymentMethod': paymentMethod,
+        'notes': notes,
+        'category': category?.id,
+        'expenseDate': expenseDate.toIso8601String(),
+        'createdAt': createdAt.toIso8601String(),
+        'updatedAt': updatedAt.toIso8601String(),
+        'deletedAt': deletedAt?.toIso8601String(),
+        'parentExpenseId': parentExpenseId,
+        // Serialize subExpense recursively or null
+        'subExpense': subExpense?.toMap(),
+      };
 
-//   Map<String, dynamic> toMap() => {
-//         'category': category?.id,
-//         'id': id,
-//         'title': title,
-//         'deltaJsonBody': deltaJsonBody,
-//         'pinLock': pinLock,
-//         'hasAttachments': hasAttachments ? 1 : 0,
-//         'hasCanvas': hasCanvas ? 1 : 0,
-//         'backgroundColor': backgroundColor.value,
-//         'isPinned': isPinned ? 1 : 0,
-//         'isBookmarked': isBookmarked ? 1 : 0,
-//         'isArchieved': isArchieved ? 1 : 0,
-//         'isTrash': isTrash ? 1 : 0,
-//         'attachments': attachments.join(','),
-//         'canvasData': canvasData,
-//         'createdAt': createdAt.toIso8601String(),
-//         'isLocked': isLocked,
-//         'updatedAt': updatedAt.toIso8601String(),
-//         'url': url
-//       };
-
-//   static Expense fromMap(Map<String, dynamic> map) => Expense(
-//         url: map["url"],
-//         category: Category.getCategoryById(map['category']),
-//         isLocked: map["isLocked"],
-//         id: map['id'],
-//         title: map['title'],
-//         deltaJsonBody: map['deltaJsonBody'],
-//         pinLock: map['pinLock'],
-//         hasAttachments: map['hasAttachments'] == 1,
-//         hasCanvas: map['hasCanvas'] == 1,
-//         backgroundColor: Color(map['backgroundColor']),
-//         isPinned: map['isPinned'] == 1,
-//         isBookmarked: map['isBookmarked'] == 1,
-//         isArchieved: map['isArchieved'] == 1,
-//         isTrash: map['isTrash'] == 1,
-//         attachments: map['attachments'].toString().split(','),
-//         canvasData: map['canvasData'],
-//         createdAt: DateTime.parse(map['createdAt']),
-//         updatedAt: DateTime.parse(map['updatedAt']),
-//       );
-// }
-
+  static Expense fromMap(Map<String, dynamic> map) => Expense(
+        id: map['id'],
+        title: map['title'],
+        amount: map['amount'] ?? 0.0,
+        currency: map['currency'] ?? 'USD',
+        description: map['description'],
+        hasAttachments: map['hasAttachments'] == 1,
+        attachments: List<String>.from(jsonDecode(map['attachments'] ?? '[]')),
+        isPinned: map['isPinned'] == 1,
+        isArchieved: map['isArchieved'] == 1,
+        isTrash: map['isTrash'] == 1,
+        isRecurring: map['isRecurring'] == 1,
+        recurringFrequency: map['recurringFrequency'],
+        paymentMethod: map['paymentMethod'],
+        notes: map['notes'],
+        category: Category.getCategoryById(map['category']),
+        expenseDate: DateTime.parse(map['expenseDate']),
+        createdAt: DateTime.parse(map['createdAt']),
+        updatedAt: DateTime.parse(map['updatedAt']),
+        deletedAt:
+            map['deletedAt'] != null ? DateTime.parse(map['deletedAt']) : null,
+        parentExpenseId: map['parentExpenseId'],
+        subExpense: map['subExpense'] != null
+            ? SubExpense.fromMap(Map<String, dynamic>.from(map['subExpense']))
+            : null,
+      );
+}

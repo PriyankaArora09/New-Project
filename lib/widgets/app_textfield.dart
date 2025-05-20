@@ -26,6 +26,7 @@ class AppTextField extends StatefulWidget {
   final TextInputAction? textInputAction;
   final bool? firstLetterCapital;
   final void Function()? onTap;
+  final bool? isCurved;
 
   const AppTextField(
       {super.key,
@@ -49,7 +50,8 @@ class AppTextField extends StatefulWidget {
       this.onFieldSubmitted,
       this.textInputAction,
       this.firstLetterCapital,
-      this.onTap});
+      this.onTap,
+      this.isCurved = false});
 
   @override
   State<AppTextField> createState() => _AppTextFieldState();
@@ -105,11 +107,13 @@ class _AppTextFieldState extends State<AppTextField> {
         suffixText: widget.suffixText,
         prefixIcon: widget.prefix,
         disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30.r),
+          borderRadius:
+              BorderRadius.circular(widget.isCurved ?? false ? 30.r : 8.r),
           borderSide: BorderSide(color: AppColors.textfield.withOpacity(0.5)),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30.r),
+          borderRadius:
+              BorderRadius.circular(widget.isCurved ?? false ? 30.r : 8.r),
           borderSide: BorderSide(color: AppColors.textfield.withOpacity(0.5)),
         ),
         filled: true,
@@ -125,20 +129,24 @@ class _AppTextFieldState extends State<AppTextField> {
             : null,
         contentPadding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 15.w),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30.r),
+          borderRadius:
+              BorderRadius.circular(widget.isCurved ?? false ? 30.r : 8.r),
           borderSide: BorderSide(color: AppColors.textfield.withOpacity(0.5)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30.r),
+          borderRadius:
+              BorderRadius.circular(widget.isCurved ?? false ? 30.r : 8.r),
           borderSide: BorderSide(color: AppColors.textfield.withOpacity(0.5)),
         ),
         errorStyle: AppTextStyle.style12400(myColor: AppColors.errorColor),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30.r),
+          borderRadius:
+              BorderRadius.circular(widget.isCurved ?? false ? 30.r : 8.r),
           borderSide: const BorderSide(color: AppColors.errorColor),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30.r),
+          borderRadius:
+              BorderRadius.circular(widget.isCurved ?? false ? 30.r : 8.r),
           borderSide: const BorderSide(color: AppColors.errorColor),
         ),
         suffixIcon: widget.suffix,

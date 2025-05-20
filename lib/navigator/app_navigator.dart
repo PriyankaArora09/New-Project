@@ -11,7 +11,19 @@ abstract class AppNavigator {
     GoRouter.of(context).push(Routes.createNote);
   }
 
+  static void goToCreateExpense(BuildContext context) {
+    GoRouter.of(context).push(Routes.createExpense);
+  }
+
   static void goToNotesList(BuildContext context) {
     GoRouter.of(context).go(Routes.notesList);
+  }
+
+  static void goToExpenseList(BuildContext context) {
+    GoRouter.of(context).go(Routes.expenses);
+  }
+
+  static void goToCreateLock(BuildContext context) {
+    GoRouter.of(context).push(Routes.createLock);
   }
 }
