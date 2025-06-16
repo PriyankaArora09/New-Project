@@ -452,6 +452,18 @@ class _CreateExpenseState extends State<CreateExpense> {
                 ),
                 if (subExpenses.isNotEmpty) ...[
                   10.height,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Sub-Expenses",
+                        style: AppTextStyle.style13400(
+                            myColor: AppColors.primaryWhite),
+                      ),
+                      addSubExpenseComponent()
+                    ],
+                  ),
+                  10.height,
                   ListView.builder(
                       itemCount: subExpenses.length,
                       shrinkWrap: true,
@@ -464,104 +476,7 @@ class _CreateExpenseState extends State<CreateExpense> {
                       })
                 ],
                 15.height,
-                InkWell(
-                  onTap: () {
-                    subDateController.clear();
-                    subTitleController.clear();
-                    subAmountController.clear();
-
-                    AppDialogs.showCustomDialog(
-                      context: context,
-                      heading: "Add Sub-Expense",
-                      positiveButtonText: "Create",
-                      negativeButtonText: "Cancel",
-                      maxHeight: 500.h,
-                      maxWidth: double.maxFinite,
-                      onPressedDone: () {
-                        subExpenses.add(SubExpense(
-                            title: subTitleController.text,
-                            id: 1,
-                            amount: double.parse(subAmountController.text),
-                            expenseDate: subDate!,
-                            createdAt: DateTime.now(),
-                            updatedAt: DateTime.now()));
-                        setState(() {});
-                      },
-                      showCancel: true,
-                      isDelete: false,
-                      children: [
-                        Text(
-                          "Title",
-                          style: AppTextStyle.style12400(
-                              myColor: AppColors.primaryWhite),
-                        ),
-                        5.height,
-                        AppTextField(
-                          controller: subTitleController,
-                          hintText: "Add title",
-                        ),
-                        10.height,
-                        Text(
-                          "Amount",
-                          style: AppTextStyle.style12400(
-                              myColor: AppColors.primaryWhite),
-                        ),
-                        5.height,
-                        AppTextField(
-                          prefixText: "\$",
-                          controller: subAmountController,
-                          hintText: "Add amount",
-                        ),
-                        10.height,
-                        Text(
-                          "Date",
-                          style: AppTextStyle.style12400(
-                            myColor: AppColors.primaryWhite,
-                          ),
-                        ),
-                        5.height,
-                        GestureDetector(
-                          onTap: () async {
-                            DateTime? picked = await showDatePicker(
-                              context: context,
-                              initialDate: subDate ?? DateTime.now(),
-                              firstDate: DateTime(2000),
-                              lastDate: DateTime(2100),
-                            );
-                            if (picked != null) {
-                              setState(() {
-                                subDate = picked;
-                                subDateController.text =
-                                    DateFormat('yyyy-MM-dd').format(picked);
-                              });
-                            }
-                          },
-                          child: AbsorbPointer(
-                            child: AppTextField(
-                              controller: subDateController,
-                              hintText: "Select Date",
-                              suffix: Icon(
-                                Icons.calendar_month,
-                                color: AppColors.primaryGraphics,
-                                size: 18.sp,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                  child: Text(
-                    "Add Sub-expense",
-                    style: TextStyle(
-                      decoration: TextDecoration.underline,
-                      decorationColor: AppColors.primaryTeal,
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w400,
-                      color: AppColors.primaryTeal,
-                    ),
-                  ),
-                )
+                if (subExpenses.isEmpty) addSubExpenseComponent()
               ],
             ),
           ),
@@ -587,10 +502,110 @@ class _CreateExpenseState extends State<CreateExpense> {
               style: AppTextStyle.style14400(myColor: AppColors.errorColor),
             ),
             Text(
-              subExpenses[index].expenseDate.toString(),
+              DateFormat('d MMM, h:mm a')
+                  .format(subExpenses[index].expenseDate),
               style: AppTextStyle.style12400(myColor: AppColors.textColor),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget addSubExpenseComponent() {
+    return InkWell(
+      onTap: () {
+        subDateController.clear();
+        subTitleController.clear();
+        subAmountController.clear();
+
+        AppDialogs.showCustomDialog(
+          context: context,
+          heading: "Add Sub-Expense",
+          positiveButtonText: "Create",
+          negativeButtonText: "Cancel",
+          maxHeight: 500.h,
+          maxWidth: double.maxFinite,
+          onPressedDone: () {
+            subExpenses.add(SubExpense(
+                title: subTitleController.text,
+                id: 1,
+                amount: double.parse(subAmountController.text),
+                expenseDate: subDate!,
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now()));
+            setState(() {});
+          },
+          showCancel: true,
+          isDelete: false,
+          children: [
+            Text(
+              "Title",
+              style: AppTextStyle.style12400(myColor: AppColors.primaryWhite),
+            ),
+            5.height,
+            AppTextField(
+              controller: subTitleController,
+              hintText: "Add title",
+            ),
+            10.height,
+            Text(
+              "Amount",
+              style: AppTextStyle.style12400(myColor: AppColors.primaryWhite),
+            ),
+            5.height,
+            AppTextField(
+              prefixText: "\$",
+              controller: subAmountController,
+              hintText: "Add amount",
+            ),
+            10.height,
+            Text(
+              "Date",
+              style: AppTextStyle.style12400(
+                myColor: AppColors.primaryWhite,
+              ),
+            ),
+            5.height,
+            GestureDetector(
+              onTap: () async {
+                DateTime? picked = await showDatePicker(
+                  context: context,
+                  initialDate: subDate ?? DateTime.now(),
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                );
+                if (picked != null) {
+                  setState(() {
+                    subDate = picked;
+                    subDateController.text =
+                        DateFormat('yyyy-MM-dd').format(picked);
+                  });
+                }
+              },
+              child: AbsorbPointer(
+                child: AppTextField(
+                  controller: subDateController,
+                  hintText: "Select Date",
+                  suffix: Icon(
+                    Icons.calendar_month,
+                    color: AppColors.primaryGraphics,
+                    size: 18.sp,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+      child: Text(
+        "Add Sub-expense",
+        style: TextStyle(
+          decoration: TextDecoration.underline,
+          decorationColor: AppColors.primaryTeal,
+          fontSize: 13.sp,
+          fontWeight: FontWeight.w400,
+          color: AppColors.primaryTeal,
         ),
       ),
     );
