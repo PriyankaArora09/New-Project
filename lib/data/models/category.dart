@@ -64,7 +64,7 @@ class Category {
     );
   }
 
-  static Category getCategoryById(int id) {
+  static Category getCategoryById(int? id) {
     return allCategories.firstWhere(
       (category) => category.id == id,
       orElse: () => Category.empty(),

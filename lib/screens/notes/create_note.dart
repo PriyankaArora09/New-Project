@@ -1,5 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:demo/constants/app_images.dart';
+import 'package:demo/data/models/category.dart';
+import 'package:demo/data/models/notes.dart';
+import 'package:demo/data/providers/notes_provider.dart';
 import 'package:demo/navigator/app_navigator.dart';
 import 'package:demo/screens/notes/canvas.dart';
 import 'package:demo/screens/notes/color_picker.dart';
@@ -10,19 +14,20 @@ import 'package:demo/utils/extensions.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
-class CreateNote extends StatefulWidget {
+class CreateNote extends ConsumerStatefulWidget {
   const CreateNote({super.key});
 
   @override
-  State<CreateNote> createState() => _CreateNoteState();
+  ConsumerState<CreateNote> createState() => _CreateNoteState();
 }
 
-class _CreateNoteState extends State<CreateNote> {
+class _CreateNoteState extends ConsumerState<CreateNote> {
   final headingController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
 
@@ -33,6 +38,15 @@ class _CreateNoteState extends State<CreateNote> {
   final stt.SpeechToText speech = stt.SpeechToText();
   bool isListening = false;
   String spokenText = '';
+  bool isPinned = false;
+  bool isBookmarked = false;
+  bool isArchieved = false;
+  bool isTrash = false;
+  String pinLock = "";
+  bool hasCanvas = false;
+  bool isLocked = false;
+  Category? category;
+  String? url;
 
   List<String> filePaths = [];
 
@@ -65,13 +79,7 @@ class _CreateNoteState extends State<CreateNote> {
         leadingWidth: 40.w,
         leading: InkWell(
           onTap: () {
-            final delta = _controller.document.toDelta();
-            final jsonContent = delta.toJson();
-
             Navigator.pop(context);
-
-            // Print the JSON content
-            print(jsonContent);
           },
           child: const Icon(
             Icons.arrow_back,
@@ -83,27 +91,89 @@ class _CreateNoteState extends State<CreateNote> {
             Expanded(
               child: Text(
                 DateFormat("dd MMMM yy").format(DateTime.now()),
-                style: AppTextStyle.style15400(myColor: AppColors.primaryWhite),
+                style: AppTextStyle.style16400(myColor: AppColors.primaryWhite),
               ),
             ),
-            Image.asset(AppImages.pin, scale: 28.sp),
-            15.width,
-            Icon(Icons.bookmark_add_outlined,
-                color: AppColors.primaryWhite, size: 20.sp),
+            InkWell(
+                onTap: () {
+                  setState(() {
+                    isPinned = !isPinned;
+                  });
+                },
+                child: !isPinned
+                    ? Image.asset(AppImages.pin, scale: 28.sp)
+                    : Icon(
+                        Icons.link_off,
+                        color: AppColors.primaryWhite,
+                        size: 20.sp,
+                      )),
             15.width,
             InkWell(
               onTap: () {
-                // final delta = _controller.document.toDelta();
-                // final jsonContent = delta.toJson();
-
-                // // Navigator.pop(context);
-
-                // // Print the JSON content
-                // debugPrint(jsonEncode(_controller.document.toDelta().toJson()));
+                setState(() {
+                  isBookmarked = !isBookmarked;
+                });
               },
-              child: Icon(Icons.archive_outlined,
-                  color: AppColors.primaryWhite, size: 20.sp),
+              child: Icon(
+                  !isBookmarked
+                      ? Icons.bookmark_add_outlined
+                      : Icons.bookmark_remove,
+                  color: AppColors.primaryWhite,
+                  size: 20.sp),
             ),
+            15.width,
+            InkWell(
+              onTap: () {
+                setState(() {
+                  isArchieved = !isArchieved;
+                });
+              },
+              child: Icon(
+                  !isArchieved ? Icons.archive_outlined : Icons.unarchive,
+                  color: AppColors.primaryWhite,
+                  size: 20.sp),
+            ),
+            15.width,
+            InkWell(
+                onTap: () {
+                  // final delta = _controller.document.toDelta();
+                  // final jsonContent = delta.toJson();
+
+                  final delta = _controller.document.toDelta();
+                  final jsonContent = jsonEncode(delta.toJson());
+
+                  // // Navigator.pop(context);
+
+                  // // Print the JSON content
+                  // debugPrint(jsonEncode(_controller.document.toDelta().toJson()));
+                  final Notes result = Notes(
+                      id: null,
+                      title: headingController.text.trim(),
+                      deltaJsonBody: jsonContent,
+                      pinLock: pinLock,
+                      hasAttachments: filePaths.isNotEmpty,
+                      hasCanvas: hasCanvas,
+                      backgroundColor: backgroundColor,
+                      isPinned: isPinned,
+                      isBookmarked: isBookmarked,
+                      isArchieved: isArchieved,
+                      isTrash: isTrash,
+                      attachments: filePaths,
+                      canvasData: null,
+                      createdAt: DateTime.now(),
+                      isLocked: isLocked,
+                      updatedAt: DateTime.now(),
+                      category: category,
+                      url: url);
+                  print(result.toString());
+                  ref.read(notesNotifierProvider.notifier).addNote(result);
+                  Navigator.pop(context);
+                },
+                child: Icon(
+                  Icons.save,
+                  color: AppColors.primaryWhite,
+                  size: 20.sp,
+                ))
           ],
         ),
         backgroundColor: backgroundColor,

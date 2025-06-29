@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:demo/constants/app_images.dart';
+import 'package:demo/data/models/notes.dart';
+import 'package:demo/data/providers/notes_provider.dart';
 import 'package:demo/navigator/app_navigator.dart';
 import 'package:demo/theme/app_colors.dart';
 import 'package:demo/theme/app_paddings.dart';
@@ -6,30 +10,33 @@ import 'package:demo/theme/app_textstyles.dart';
 import 'package:demo/utils/extensions.dart';
 import 'package:demo/widgets/app_textfield.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
-class NotesScreen extends StatefulWidget {
+class NotesScreen extends ConsumerStatefulWidget {
   const NotesScreen({super.key});
 
   @override
-  State<NotesScreen> createState() => _NotesScreenState();
+  ConsumerState<NotesScreen> createState() => _NotesScreenState();
 }
 
-class _NotesScreenState extends State<NotesScreen>
+class _NotesScreenState extends ConsumerState<NotesScreen>
     with SingleTickerProviderStateMixin {
   final TextEditingController searchController = TextEditingController();
   late TabController _tabController;
+  List<Notes> notes = [];
+  List<Notes> bookmarkedNotes = [];
 
   bool isList = false;
   bool showOptions = false;
+  List<int> selectedItems = [];
 
   @override
   void initState() {
     super.initState();
 
     _tabController = TabController(length: 2, vsync: this);
-
     _tabController.addListener(() {
       setState(() {});
     });
@@ -41,8 +48,51 @@ class _NotesScreenState extends State<NotesScreen>
     super.dispose();
   }
 
+  void showSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<bool> showConfirmationDialog(String title, String content) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            backgroundColor: AppColors.secondaryBackground,
+            title: Text(title,
+                style:
+                    AppTextStyle.style15500(myColor: AppColors.primaryWhite)),
+            content: Text(content,
+                style: AppTextStyle.style13400(myColor: AppColors.textColor)),
+            actions: [
+              TextButton(
+                child: const Text("Cancel"),
+                onPressed: () => Navigator.pop(context, false),
+              ),
+              TextButton(
+                child: const Text("Yes"),
+                onPressed: () => Navigator.pop(context, true),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final notesState = ref.watch(notesNotifierProvider);
+    notesState.whenData((list) {
+      final pinned = list.where((note) => note.isPinned).toList();
+      final unpinned = list.where((note) => !note.isPinned).toList()
+        ..sort((a, b) => b.id!.compareTo(a.id!));
+      notes = [...pinned, ...unpinned];
+      bookmarkedNotes = list.where((note) => note.isBookmarked).toList();
+    });
+
     return Scaffold(
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: InkWell(
@@ -72,9 +122,12 @@ class _NotesScreenState extends State<NotesScreen>
             tabsHeader(),
             10.height,
             Expanded(
-                child: TabBarView(
-                    controller: _tabController,
-                    children: [staggeredGrid(false), staggeredGrid(true)]))
+              child: TabBarView(
+                controller: _tabController,
+                children: [staggeredGrid(false), staggeredGrid(true)],
+              ),
+            ),
+            10.height
           ],
         ),
       ),
@@ -82,46 +135,145 @@ class _NotesScreenState extends State<NotesScreen>
   }
 
   Widget filterRow() {
-    return AppTextField(
-      prefix: const Icon(
-        Icons.search,
-        color: AppColors.primaryWhite,
-      ),
-      controller: searchController,
-      hintText: "Search notes",
-      suffix: Row(
-        mainAxisSize: MainAxisSize.min,
+    if (showOptions) {
+      return Row(
         children: [
-          InkWell(
-            onTap: () {
-              setState(() {
-                isList = !isList;
-              });
+          IconButton(
+            icon: const Icon(Icons.delete, color: AppColors.errorColor),
+            onPressed: () async {
+              final confirm = await showConfirmationDialog("Delete Notes",
+                  "Are you sure you want to delete selected notes permanently?");
+              if (confirm) {
+                for (var id in selectedItems) {
+                  await ref.read(notesNotifierProvider.notifier).deleteNote(id);
+                }
+                selectedItems.clear();
+                showOptions = false;
+                setState(() {});
+                showSnack("Deleted selected notes");
+              }
             },
-            child: Image.asset(
-              isList ? AppImages.grid : AppImages.list,
-              scale: isList ? 24.sp : 20.sp,
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: AppColors.textColor),
+            tooltip: "Move to Trash",
+            onPressed: () async {
+              for (var id in selectedItems) {
+                final note = notes.firstWhere((n) => n.id == id);
+                await ref.read(notesNotifierProvider.notifier).updateNote(
+                    note.copyWith(isTrash: true, updatedAt: DateTime.now()));
+              }
+              selectedItems.clear();
+              showOptions = false;
+              setState(() {});
+              showSnack("Moved to trash");
+            },
+          ),
+          IconButton(
+            icon:
+                const Icon(Icons.archive_outlined, color: AppColors.textColor),
+            onPressed: () async {
+              for (var id in selectedItems) {
+                final note = notes.firstWhere((n) => n.id == id);
+                await ref.read(notesNotifierProvider.notifier).updateNote(note
+                    .copyWith(isArchieved: true, updatedAt: DateTime.now()));
+              }
+              selectedItems.clear();
+              showOptions = false;
+              setState(() {});
+              showSnack("Archived selected notes");
+            },
+          ),
+          IconButton(
+            icon:
+                const Icon(Icons.push_pin_outlined, color: AppColors.textColor),
+            onPressed: () async {
+              for (var id in selectedItems) {
+                final note = notes.firstWhere((n) => n.id == id);
+                await ref.read(notesNotifierProvider.notifier).updateNote(
+                    note.copyWith(
+                        isPinned: !note.isPinned, updatedAt: DateTime.now()));
+              }
+              selectedItems.clear();
+              showOptions = false;
+              setState(() {});
+              showSnack("Updated pinned status");
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.bookmark_border, color: AppColors.textColor),
+            onPressed: () async {
+              for (var id in selectedItems) {
+                final note = notes.firstWhere((n) => n.id == id);
+                await ref.read(notesNotifierProvider.notifier).updateNote(
+                    note.copyWith(
+                        isBookmarked: !note.isBookmarked,
+                        updatedAt: DateTime.now()));
+              }
+              selectedItems.clear();
+              showOptions = false;
+              setState(() {});
+              showSnack("Updated bookmark status");
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.lock_outline, color: AppColors.textColor),
+            onPressed: () async {
+              for (var id in selectedItems) {
+                final note = notes.firstWhere((n) => n.id == id);
+                await ref.read(notesNotifierProvider.notifier).updateNote(
+                    note.copyWith(
+                        isLocked: !note.isLocked, updatedAt: DateTime.now()));
+              }
+              selectedItems.clear();
+              showOptions = false;
+              setState(() {});
+              showSnack("Updated lock status");
+            },
+          ),
+          const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.clear, color: AppColors.textColor),
+            onPressed: () {
+              selectedItems.clear();
+              showOptions = false;
+              setState(() {});
+            },
+          )
+        ],
+      );
+    } else {
+      return AppTextField(
+        prefix: const Icon(Icons.search, color: AppColors.primaryWhite),
+        controller: searchController,
+        hintText: "Search notes",
+        suffix: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InkWell(
+              onTap: () {
+                setState(() {
+                  isList = !isList;
+                });
+              },
+              child: Image.asset(
+                isList ? AppImages.grid : AppImages.list,
+                scale: isList ? 24.sp : 20.sp,
+                color: AppColors.primaryWhite,
+              ),
+            ),
+            12.width,
+            Image.asset(
+              AppImages.sort,
+              scale: 20.sp,
               color: AppColors.primaryWhite,
             ),
-          ),
-          12.width,
-          Image.asset(
-            AppImages.sort,
-            scale: 20.sp,
-            color: AppColors.primaryWhite,
-          ),
-          8.width,
-        ],
-      ),
-    );
+            8.width,
+          ],
+        ),
+      );
+    }
   }
-
-  // Widget optionsRow() {
-  //   return Row(
-  //     mainAxisAlignment: MainAxisAlignment.end,
-  //     children: [],
-  //   );
-  // }
 
   Widget tabsHeader() {
     return SizedBox(
@@ -137,12 +289,7 @@ class _NotesScreenState extends State<NotesScreen>
         indicatorColor: AppColors.primaryTeal,
         indicatorWeight: 0.2,
         labelStyle: AppTextStyle.style13600(myColor: AppColors.primaryTeal),
-        tabs: const [
-          Tab(text: "All"),
-          Tab(
-            text: "Bookmarks",
-          )
-        ],
+        tabs: const [Tab(text: "All"), Tab(text: "Bookmarks")],
       ),
     );
   }
@@ -155,21 +302,62 @@ class _NotesScreenState extends State<NotesScreen>
         mainAxisSpacing: 10.h,
         crossAxisSpacing: 10.w,
         children: List.generate(
-          10,
+          _tabController.index == 0 ? notes.length : bookmarkedNotes.length,
           (index) => StaggeredGridTile.fit(
             crossAxisCellCount: isList ? 2 : 1,
-            child: gridContainer(index, isFav),
+            child: gridContainer(
+              index,
+              _tabController.index == 0 ? notes[index] : bookmarkedNotes[index],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget gridContainer(int index, bool isFav) {
+  Widget gridContainer(int index, Notes note) {
+    String noteContent = "";
+    if (note.deltaJsonBody != null && note.deltaJsonBody!.isNotEmpty) {
+      try {
+        final dynamic decoded = jsonDecode(note.deltaJsonBody!);
+        if (decoded is List) {
+          final buffer = StringBuffer();
+          for (var op in decoded) {
+            if (op is Map && op["insert"] != null) {
+              buffer.write(op["insert"]);
+            }
+          }
+          noteContent = buffer.toString();
+          final int maxLength = note.attachments.isNotEmpty ? 120 : 180;
+          if (noteContent.length > maxLength) {
+            noteContent = "${noteContent.substring(0, maxLength)}...";
+          }
+        } else {
+          noteContent = "Invalid content format";
+        }
+      } catch (e) {
+        noteContent = "Error loading content";
+      }
+    } else {
+      noteContent = "No content";
+    }
+
     return InkWell(
+      onTap: () {
+        setState(() {
+          if (showOptions) {
+            if (selectedItems.contains(note.id)) {
+              selectedItems.remove(note.id);
+            } else {
+              selectedItems.add(note.id!);
+            }
+          }
+        });
+      },
       onLongPress: () {
         setState(() {
           showOptions = true;
+          selectedItems.add(note.id!);
         });
       },
       child: Stack(
@@ -179,28 +367,95 @@ class _NotesScreenState extends State<NotesScreen>
             width: double.maxFinite,
             padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 12.w),
             decoration: BoxDecoration(
-                color: AppColors.secondaryBackground,
-                borderRadius: BorderRadius.circular(10.r),
-                border: Border.all(color: AppColors.dividerColor)),
-            child: Text(
-              index == 3
-                  ? "lalalalla\n lalalallalal\n lalalallal\nlalalalla\n lalalallalal\n lalalallal\n\n\nlalalal"
-                  : index == 5
-                      ? "lalalalla\n lalalallalal\n lalalallal\nlalalalla\n "
-                      : 'Item $index hhhhh \n hhhhh',
-              style: AppTextStyle.style13400(myColor: AppColors.primaryWhite),
+              color: selectedItems.contains(note.id!)
+                  ? AppColors.textfield
+                  : note.backgroundColor,
+              borderRadius: BorderRadius.circular(10.r),
+              border: Border.all(color: AppColors.dividerColor),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                showOptions
+                    ? Checkbox(
+                        visualDensity:
+                            VisualDensity(horizontal: 0, vertical: 0),
+                        value: selectedItems.contains(note.id),
+                        onChanged: (val) {
+                          setState(() {
+                            if (selectedItems.contains(note.id)) {
+                              selectedItems.remove(note.id);
+                            } else {
+                              selectedItems.add(note.id!);
+                            }
+                          });
+                        })
+                    : const SizedBox.shrink(),
+                (note.title != null && note.title!.isNotEmpty) || note.isPinned
+                    ? Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
+                              note.title!,
+                              style: AppTextStyle.style15500(
+                                  myColor: AppColors.primaryWhite),
+                            ),
+                          ),
+                          10.width,
+                          note.isPinned
+                              ? Icon(Icons.link,
+                                  size: 18.sp,
+                                  color: AppColors.textColor.withOpacity(0.5))
+                              : const SizedBox.shrink(),
+                        ],
+                      )
+                    : const SizedBox.shrink(),
+                5.height,
+                Text(
+                  noteContent,
+                  style:
+                      AppTextStyle.style13400(myColor: AppColors.primaryWhite),
+                ),
+                if (note.attachments.isNotEmpty) ...[
+                  8.height,
+                  Wrap(
+                    spacing: 5.w,
+                    runSpacing: 5.h,
+                    children: note.attachments.take(2).map((path) {
+                      return SizedBox(
+                        width: 50.w,
+                        height: 50.w,
+                        child: Image.file(
+                          File(path),
+                          fit: BoxFit.cover,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ]
+              ],
             ),
           ),
-          !isFav
-              ? Padding(
-                  padding: EdgeInsets.only(bottom: 10.h, right: 10.w),
-                  child: Icon(
-                    Icons.bookmark_add_outlined,
-                    size: 18.sp,
-                    color: AppColors.textColor.withOpacity(0.5),
-                  ),
-                )
-              : const SizedBox.shrink()
+          Padding(
+            padding: EdgeInsets.only(bottom: 10.h, right: 10.w),
+            child: InkWell(
+              onTap: () async {
+                await ref.read(notesNotifierProvider.notifier).updateNote(
+                    note.copyWith(
+                        isBookmarked: !note.isBookmarked,
+                        updatedAt: DateTime.now()));
+              },
+              child: Icon(
+                !note.isBookmarked
+                    ? Icons.bookmark_add_outlined
+                    : Icons.bookmark_remove,
+                size: 18.sp,
+                color: AppColors.textColor.withOpacity(0.5),
+              ),
+            ),
+          )
         ],
       ),
     );
