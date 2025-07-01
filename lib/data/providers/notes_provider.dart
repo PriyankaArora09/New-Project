@@ -58,3 +58,17 @@ final notesNotifierProvider =
     StateNotifierProvider<NotesNotifier, AsyncValue<List<Notes>>>((ref) {
   return NotesNotifier();
 });
+
+final archivedNotesProvider = Provider<AsyncValue<List<Notes>>>((ref) {
+  final allNotes = ref.watch(notesNotifierProvider);
+  return allNotes.whenData(
+    (notes) => notes.where((note) => note.isArchieved).toList(),
+  );
+});
+
+final trashedNotesProvider = Provider<AsyncValue<List<Notes>>>((ref) {
+  final allNotes = ref.watch(notesNotifierProvider);
+  return allNotes.whenData(
+    (notes) => notes.where((note) => note.isTrash).toList(),
+  );
+});
