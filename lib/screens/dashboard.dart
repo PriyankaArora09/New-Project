@@ -101,6 +101,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                 onTap: () {
                   if (spaces[index]['name'] == "Notes") {
                     AppNavigator.goToNotesList(context);
+                  } else if (spaces[index]['name'] == "Expenses") {
+                    AppNavigator.goToExpenseList(context);
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text("Coming soon")),

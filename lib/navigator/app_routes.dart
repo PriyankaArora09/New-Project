@@ -2,6 +2,7 @@ import 'package:demo/screens/dashboard.dart';
 import 'package:demo/screens/expense_tracker/create_expense.dart';
 import 'package:demo/screens/expense_tracker/expenses.dart';
 import 'package:demo/screens/notes/create_note.dart';
+import 'package:demo/screens/notes/filtered_notes.dart';
 import 'package:demo/screens/notes/lock_screen.dart';
 import 'package:demo/screens/notes/note_list.dart';
 import 'package:demo/screens/splash.dart';
@@ -17,6 +18,8 @@ class Routes {
   static const String createLock = '/createLock';
   static const String expenses = '/expenses';
   static const String createExpense = '/createExpense';
+  static const String archivedNotes = '/archivedNotes';
+  static const String trashNotes = '/trashNotes';
 
   // static const String home = '/home';
 
@@ -74,6 +77,24 @@ class Routes {
         pageBuilder: (context, state) => NoTransitionPage(
           key: state.pageKey,
           child: const CreateLock(),
+        ),
+      ),
+      GoRoute(
+        path: archivedNotes,
+        pageBuilder: (context, state) => NoTransitionPage(
+          key: state.pageKey,
+          child: const FilteredNotes(
+            isTrash: false,
+          ),
+        ),
+      ),
+      GoRoute(
+        path: trashNotes,
+        pageBuilder: (context, state) => NoTransitionPage(
+          key: state.pageKey,
+          child: const FilteredNotes(
+            isTrash: true,
+          ),
         ),
       ),
 

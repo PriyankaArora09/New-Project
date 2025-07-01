@@ -30,4 +30,12 @@ abstract class AppNavigator {
   static void goToCreateLock(BuildContext context) {
     GoRouter.of(context).push(Routes.createLock);
   }
+
+  static void goToTrashNotes(BuildContext context) {
+    GoRouter.of(context).push(Routes.trashNotes);
+  }
+
+  static void goToArchivedNotes(BuildContext context) {
+    GoRouter.of(context).push(Routes.archivedNotes);
+  }
 }

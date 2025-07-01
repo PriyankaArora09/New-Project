@@ -15,17 +15,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
-class NotesScreen extends ConsumerStatefulWidget {
-  const NotesScreen({super.key});
+class FilteredNotes extends ConsumerStatefulWidget {
+  const FilteredNotes({super.key, required this.isTrash});
+  final bool isTrash;
 
   @override
-  ConsumerState<NotesScreen> createState() => _NotesScreenState();
+  ConsumerState<FilteredNotes> createState() => _FilteredNotesState();
 }
 
-class _NotesScreenState extends ConsumerState<NotesScreen>
-    with SingleTickerProviderStateMixin {
+class _FilteredNotesState extends ConsumerState<FilteredNotes> {
   final TextEditingController searchController = TextEditingController();
-  late TabController _tabController;
+
   List<Notes> notes = [];
   List<Notes> bookmarkedNotes = [];
 
@@ -38,16 +38,10 @@ class _NotesScreenState extends ConsumerState<NotesScreen>
   @override
   void initState() {
     super.initState();
-
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(() {
-      setState(() {});
-    });
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     super.dispose();
   }
 
@@ -62,19 +56,19 @@ class _NotesScreenState extends ConsumerState<NotesScreen>
 
   @override
   Widget build(BuildContext context) {
-    final notesState = ref.watch(notesNotifierProvider);
-    notesState.whenData((list) {
-      final activeNotes =
-          list.where((note) => !note.isArchieved && !note.isTrash);
+    final notesState = widget.isTrash
+        ? ref.watch(trashedNotesProvider)
+        : ref.watch(archivedNotesProvider);
 
-      final pinned = activeNotes.where((note) => note.isPinned).toList();
-      final unpinned = activeNotes.where((note) => !note.isPinned).toList()
-        ..sort((a, b) => b.id!.compareTo(a.id!));
-
-      notes = [...pinned, ...unpinned];
-
-      bookmarkedNotes = activeNotes.where((note) => note.isBookmarked).toList();
-    });
+    notes = notesState.when(
+      data: (data) => data,
+      error: (error, stackTrace) {
+        return [];
+      },
+      loading: () {
+        return [];
+      },
+    );
 
     return PopScope(
       canPop: !showOptions,
@@ -114,14 +108,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen>
               40.height,
               filterRow(),
               10.height,
-              tabsHeader(),
-              10.height,
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [staggeredGrid(false), staggeredGrid(true)],
-                ),
-              ),
+              staggeredGrid(),
               10.height
             ],
           ),
@@ -155,48 +142,33 @@ class _NotesScreenState extends ConsumerState<NotesScreen>
           )),
           IconButton(
             icon: const Icon(Icons.delete_outline, color: AppColors.textColor),
-            tooltip: "Move to Trash",
+            tooltip: "Delete permanently",
             onPressed: () async {
               for (var id in selectedItems) {
-                final note = notes.firstWhere((n) => n.id == id);
-                await ref.read(notesNotifierProvider.notifier).updateNote(
-                    note.copyWith(isTrash: true, updatedAt: DateTime.now()));
+                await ref.read(notesNotifierProvider.notifier).deleteNote(id);
               }
               selectedItems.clear();
               showOptions = false;
               setState(() {});
-              showSnack("Moved to trash");
+              showSnack("Selected items deleted permanently");
             },
           ),
           IconButton(
-            icon:
-                const Icon(Icons.archive_outlined, color: AppColors.textColor),
-            onPressed: () async {
-              for (var id in selectedItems) {
-                final note = notes.firstWhere((n) => n.id == id);
-                await ref.read(notesNotifierProvider.notifier).updateNote(note
-                    .copyWith(isArchieved: true, updatedAt: DateTime.now()));
-              }
-              selectedItems.clear();
-              showOptions = false;
-              setState(() {});
-              showSnack("Selected notes moved to archive");
-            },
-          ),
-          IconButton(
-            icon:
-                const Icon(Icons.push_pin_outlined, color: AppColors.textColor),
+            icon: Icon(
+                widget.isTrash ? Icons.archive_outlined : Icons.unarchive,
+                color: AppColors.textColor),
             onPressed: () async {
               for (var id in selectedItems) {
                 final note = notes.firstWhere((n) => n.id == id);
                 await ref.read(notesNotifierProvider.notifier).updateNote(
                     note.copyWith(
-                        isPinned: !note.isPinned, updatedAt: DateTime.now()));
+                        isArchieved: widget.isTrash ? true : false,
+                        updatedAt: DateTime.now()));
               }
               selectedItems.clear();
               showOptions = false;
               setState(() {});
-              showSnack("Updated pinned status");
+              showSnack("Updated notes list");
             },
           ),
           IconButton(
@@ -217,7 +189,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen>
             },
             child: const Icon(Icons.menu, color: AppColors.primaryWhite)),
         controller: searchController,
-        hintText: "Search notes",
+        hintText: "Search...",
         suffix: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -233,12 +205,6 @@ class _NotesScreenState extends ConsumerState<NotesScreen>
                 color: AppColors.primaryWhite,
               ),
             ),
-            12.width,
-            Image.asset(
-              AppImages.sort,
-              scale: 20.sp,
-              color: AppColors.primaryWhite,
-            ),
             8.width,
           ],
         ),
@@ -246,26 +212,7 @@ class _NotesScreenState extends ConsumerState<NotesScreen>
     }
   }
 
-  Widget tabsHeader() {
-    return SizedBox(
-      height: 30.h,
-      child: TabBar(
-        dividerColor: AppColors.dividerColor,
-        controller: _tabController,
-        indicatorPadding: EdgeInsets.zero,
-        padding: EdgeInsets.symmetric(vertical: 0.h),
-        labelPadding: EdgeInsets.zero,
-        labelColor: AppColors.primaryTeal,
-        unselectedLabelColor: AppColors.textColor,
-        indicatorColor: AppColors.primaryTeal,
-        indicatorWeight: 0.2,
-        labelStyle: AppTextStyle.style13600(myColor: AppColors.primaryTeal),
-        tabs: const [Tab(text: "All"), Tab(text: "Bookmarks")],
-      ),
-    );
-  }
-
-  Widget staggeredGrid(bool isFav) {
+  Widget staggeredGrid() {
     return SingleChildScrollView(
       child: StaggeredGrid.count(
         axisDirection: AxisDirection.down,
@@ -273,12 +220,12 @@ class _NotesScreenState extends ConsumerState<NotesScreen>
         mainAxisSpacing: 10.h,
         crossAxisSpacing: 10.w,
         children: List.generate(
-          _tabController.index == 0 ? notes.length : bookmarkedNotes.length,
+          notes.length,
           (index) => StaggeredGridTile.fit(
             crossAxisCellCount: isList ? 2 : 1,
             child: gridContainer(
               index,
-              _tabController.index == 0 ? notes[index] : bookmarkedNotes[index],
+              notes[index],
             ),
           ),
         ),
@@ -369,7 +316,6 @@ class _NotesScreenState extends ConsumerState<NotesScreen>
                             }),
                       )
                     : const SizedBox.shrink(),
-                10.height,
                 (note.title != null && note.title!.isNotEmpty) || note.isPinned
                     ? Row(
                         children: [
@@ -382,12 +328,6 @@ class _NotesScreenState extends ConsumerState<NotesScreen>
                                   myColor: AppColors.primaryWhite),
                             ),
                           ),
-                          10.width,
-                          note.isPinned
-                              ? Icon(Icons.link,
-                                  size: 18.sp,
-                                  color: AppColors.textColor.withOpacity(0.5))
-                              : const SizedBox.shrink(),
                         ],
                       )
                     : const SizedBox.shrink(),
@@ -417,24 +357,6 @@ class _NotesScreenState extends ConsumerState<NotesScreen>
               ],
             ),
           ),
-          Padding(
-            padding: EdgeInsets.only(bottom: 10.h, right: 10.w),
-            child: InkWell(
-              onTap: () async {
-                await ref.read(notesNotifierProvider.notifier).updateNote(
-                    note.copyWith(
-                        isBookmarked: !note.isBookmarked,
-                        updatedAt: DateTime.now()));
-              },
-              child: Icon(
-                !note.isBookmarked
-                    ? Icons.bookmark_add_outlined
-                    : Icons.bookmark_remove,
-                size: 18.sp,
-                color: AppColors.textColor.withOpacity(0.5),
-              ),
-            ),
-          )
         ],
       ),
     );

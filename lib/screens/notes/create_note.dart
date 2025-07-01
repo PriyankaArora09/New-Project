@@ -11,6 +11,7 @@ import 'package:demo/theme/app_colors.dart';
 import 'package:demo/theme/app_paddings.dart';
 import 'package:demo/theme/app_textstyles.dart';
 import 'package:demo/utils/extensions.dart';
+import 'package:demo/widgets/app_dialogs.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart' as quill;
@@ -71,133 +72,207 @@ class _CreateNoteState extends ConsumerState<CreateNote> {
     super.initState();
   }
 
+  bool isSaved = false;
+
+  Future<void> saveChanges() async {
+    try {
+      // final delta = _controller.document.toDelta();
+      // final jsonContent = delta.toJson();
+
+      final delta = _controller.document.toDelta();
+      final jsonContent = jsonEncode(delta.toJson());
+
+      // // Navigator.pop(context);
+
+      // // Print the JSON content
+      // debugPrint(jsonEncode(_controller.document.toDelta().toJson()));
+      final Notes result = Notes(
+          id: null,
+          title: headingController.text.trim(),
+          deltaJsonBody: jsonContent,
+          pinLock: pinLock,
+          hasAttachments: filePaths.isNotEmpty,
+          hasCanvas: hasCanvas,
+          backgroundColor: backgroundColor,
+          isPinned: isPinned,
+          isBookmarked: isBookmarked,
+          isArchieved: isArchieved,
+          isTrash: isTrash,
+          attachments: filePaths,
+          canvasData: null,
+          createdAt: DateTime.now(),
+          isLocked: isLocked,
+          updatedAt: DateTime.now(),
+          category: category,
+          url: url);
+      print(result.toString());
+      ref.read(notesNotifierProvider.notifier).addNote(result);
+      isSaved = true;
+      Navigator.pop(context);
+    } catch (e) {
+      print("getting error while saving $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        leadingWidth: 40.w,
-        leading: InkWell(
-          onTap: () {
-            Navigator.pop(context);
-          },
-          child: const Icon(
-            Icons.arrow_back,
-            color: AppColors.primaryWhite,
-          ),
-        ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                DateFormat("dd MMMM yy").format(DateTime.now()),
-                style: AppTextStyle.style16400(myColor: AppColors.primaryWhite),
-              ),
+    return PopScope(
+      canPop: isSaved,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (!isSaved) {
+          await AppDialogs.showCustomDialog(
+              context: context,
+              heading: "Save Changes",
+              positiveButtonText: "Save",
+              negativeButtonText: "Lose changes",
+              maxHeight: 500.h,
+              maxWidth: 500.w,
+              onPressedDone: () {
+                saveChanges();
+              },
+              onPressedCancel: () {
+                setState(() {
+                  isSaved = true;
+                });
+                Navigator.pop(context);
+                Navigator.pop(context);
+              },
+              showCancel: true,
+              isDelete: false,
+              children: [
+                Text(
+                  "You will lose all your changes if you exit without saving!",
+                  style:
+                      AppTextStyle.style14400(myColor: AppColors.primaryWhite),
+                )
+              ]);
+          // isSaved = true;
+        }
+      },
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        appBar: AppBar(
+          leadingWidth: 40.w,
+          leading: InkWell(
+            onTap: () async {
+              if (!isSaved) {
+                await AppDialogs.showCustomDialog(
+                    context: context,
+                    heading: "Save Changes",
+                    positiveButtonText: "Save",
+                    negativeButtonText: "Lose Changes",
+                    maxHeight: 500.h,
+                    maxWidth: 500.w,
+                    onPressedDone: () {
+                      saveChanges();
+                    },
+                    onPressedCancel: () {
+                      setState(() {
+                        isSaved = true;
+                      });
+                      Navigator.pop(context);
+                      Navigator.pop(context);
+                    },
+                    showCancel: true,
+                    isDelete: false,
+                    children: [
+                      Text(
+                        "You will lose all your changes if you exit without saving",
+                        style: AppTextStyle.style14400(
+                            myColor: AppColors.primaryWhite),
+                      )
+                    ]);
+                // isSaved = true;
+              }
+            },
+            child: const Icon(
+              Icons.arrow_back,
+              color: AppColors.primaryWhite,
             ),
-            InkWell(
+          ),
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  DateFormat("dd MMMM yy").format(DateTime.now()),
+                  style:
+                      AppTextStyle.style16400(myColor: AppColors.primaryWhite),
+                ),
+              ),
+              InkWell(
+                  onTap: () {
+                    setState(() {
+                      isPinned = !isPinned;
+                    });
+                  },
+                  child: !isPinned
+                      ? Image.asset(AppImages.pin, scale: 28.sp)
+                      : Icon(
+                          Icons.link_off,
+                          color: AppColors.primaryWhite,
+                          size: 20.sp,
+                        )),
+              15.width,
+              InkWell(
                 onTap: () {
                   setState(() {
-                    isPinned = !isPinned;
+                    isBookmarked = !isBookmarked;
                   });
                 },
-                child: !isPinned
-                    ? Image.asset(AppImages.pin, scale: 28.sp)
-                    : Icon(
-                        Icons.link_off,
-                        color: AppColors.primaryWhite,
-                        size: 20.sp,
-                      )),
-            15.width,
-            InkWell(
-              onTap: () {
-                setState(() {
-                  isBookmarked = !isBookmarked;
-                });
-              },
-              child: Icon(
-                  !isBookmarked
-                      ? Icons.bookmark_add_outlined
-                      : Icons.bookmark_remove,
-                  color: AppColors.primaryWhite,
-                  size: 20.sp),
-            ),
-            15.width,
-            InkWell(
-              onTap: () {
-                setState(() {
-                  isArchieved = !isArchieved;
-                });
-              },
-              child: Icon(
-                  !isArchieved ? Icons.archive_outlined : Icons.unarchive,
-                  color: AppColors.primaryWhite,
-                  size: 20.sp),
-            ),
-            15.width,
-            InkWell(
+                child: Icon(
+                    !isBookmarked
+                        ? Icons.bookmark_add_outlined
+                        : Icons.bookmark_remove,
+                    color: AppColors.primaryWhite,
+                    size: 20.sp),
+              ),
+              15.width,
+              InkWell(
                 onTap: () {
-                  // final delta = _controller.document.toDelta();
-                  // final jsonContent = delta.toJson();
-
-                  final delta = _controller.document.toDelta();
-                  final jsonContent = jsonEncode(delta.toJson());
-
-                  // // Navigator.pop(context);
-
-                  // // Print the JSON content
-                  // debugPrint(jsonEncode(_controller.document.toDelta().toJson()));
-                  final Notes result = Notes(
-                      id: null,
-                      title: headingController.text.trim(),
-                      deltaJsonBody: jsonContent,
-                      pinLock: pinLock,
-                      hasAttachments: filePaths.isNotEmpty,
-                      hasCanvas: hasCanvas,
-                      backgroundColor: backgroundColor,
-                      isPinned: isPinned,
-                      isBookmarked: isBookmarked,
-                      isArchieved: isArchieved,
-                      isTrash: isTrash,
-                      attachments: filePaths,
-                      canvasData: null,
-                      createdAt: DateTime.now(),
-                      isLocked: isLocked,
-                      updatedAt: DateTime.now(),
-                      category: category,
-                      url: url);
-                  print(result.toString());
-                  ref.read(notesNotifierProvider.notifier).addNote(result);
-                  Navigator.pop(context);
+                  setState(() {
+                    isArchieved = !isArchieved;
+                  });
                 },
                 child: Icon(
-                  Icons.save,
-                  color: AppColors.primaryWhite,
-                  size: 20.sp,
-                ))
-          ],
+                    !isArchieved ? Icons.archive_outlined : Icons.unarchive,
+                    color: AppColors.primaryWhite,
+                    size: 20.sp),
+              ),
+              15.width,
+              InkWell(
+                  onTap: () {
+                    saveChanges();
+                  },
+                  child: Icon(
+                    Icons.save,
+                    color: AppColors.primaryWhite,
+                    size: 20.sp,
+                  ))
+            ],
+          ),
+          backgroundColor: backgroundColor,
         ),
         backgroundColor: backgroundColor,
-      ),
-      backgroundColor: backgroundColor,
-      bottomSheet: bottomSheet(),
-      body: Padding(
-        padding: AppPaddings.createNotePadding,
-        child: SingleChildScrollView(
-          controller: scrollController,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (showCanvas)
-                SizedBox(
-                    height: MediaQuery.of(context).size.height,
-                    child: const CanvasWidget())
-              else ...[
-                pickedFilesPreview(),
-                headingField(),
-                10.height,
-                bodyField(),
-              ]
-            ],
+        bottomSheet: bottomSheet(),
+        body: Padding(
+          padding: AppPaddings.createNotePadding,
+          child: SingleChildScrollView(
+            controller: scrollController,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (showCanvas)
+                  SizedBox(
+                      height: MediaQuery.of(context).size.height,
+                      child: const CanvasWidget())
+                else ...[
+                  pickedFilesPreview(),
+                  headingField(),
+                  10.height,
+                  bodyField(),
+                ]
+              ],
+            ),
           ),
         ),
       ),
@@ -232,7 +307,8 @@ class _CreateNoteState extends ConsumerState<CreateNote> {
     return quill.QuillEditor.basic(
       scrollController: scrollController,
       configurations: quill.QuillEditorConfigurations(
-          enableScribble: true,
+
+          // enableScribble: true,
           controller: _controller,
           scrollable: false,
           textCapitalization: TextCapitalization.none,
@@ -475,8 +551,8 @@ class _CreateNoteState extends ConsumerState<CreateNote> {
           // ZefyrToolbar.basic(controller: _controller),
           quill.QuillSimpleToolbar(
             configurations: quill.QuillSimpleToolbarConfigurations(
-              showClipboardCopy: false,
-              showClipboardPaste: false,
+              // showClipboardCopy: false,
+              // showClipboardPaste: false,
               showDirection: false,
               showBackgroundColorButton: false,
               showUndo: false,
@@ -485,9 +561,9 @@ class _CreateNoteState extends ConsumerState<CreateNote> {
               showFontFamily: false,
               showFontSize: false,
               showSearchButton: false,
-              showClipboardCut: false,
+              // showClipboardCut: false,
               showQuote: false,
-              showLineHeightButton: false,
+              // showLineHeightButton: false,
               showSmallButton: false,
               showDividers: false,
               controller: _controller,
