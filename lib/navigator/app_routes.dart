@@ -5,6 +5,8 @@ import 'package:demo/screens/notes/create_note.dart';
 import 'package:demo/screens/notes/filtered_notes.dart';
 import 'package:demo/screens/notes/lock_screen.dart';
 import 'package:demo/screens/notes/note_list.dart';
+import 'package:demo/screens/passwords/create_password.dart';
+import 'package:demo/screens/passwords/passwords_list.dart';
 import 'package:demo/screens/splash.dart';
 // import 'package:demo/widgets/bottom_navigation.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +22,8 @@ class Routes {
   static const String createExpense = '/createExpense';
   static const String archivedNotes = '/archivedNotes';
   static const String trashNotes = '/trashNotes';
+  static const String passwords = '/passwords';
+  static const String createPassword = '/createPassword';
 
   // static const String home = '/home';
 
@@ -95,6 +99,18 @@ class Routes {
           child: const FilteredNotes(
             isTrash: true,
           ),
+        ),
+      ),
+      GoRoute(
+        path: passwords,
+        pageBuilder: (context, state) =>
+            NoTransitionPage(key: state.pageKey, child: const PasswordsList()),
+      ),
+      GoRoute(
+        path: createPassword,
+        pageBuilder: (context, state) => NoTransitionPage(
+          key: state.pageKey,
+          child: const CreatePassword(),
         ),
       ),
 

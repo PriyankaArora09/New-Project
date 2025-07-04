@@ -38,4 +38,12 @@ abstract class AppNavigator {
   static void goToArchivedNotes(BuildContext context) {
     GoRouter.of(context).push(Routes.archivedNotes);
   }
+
+  static void goToPasswords(BuildContext context) {
+    GoRouter.of(context).push(Routes.passwords);
+  }
+
+  static void goToCreatePassword(BuildContext context) {
+    GoRouter.of(context).push(Routes.createPassword);
+  }
 }
